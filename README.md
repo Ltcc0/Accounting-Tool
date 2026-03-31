@@ -1,4 +1,4 @@
-# Accounting-Tool (TypeScript + Feishu Bot)
+# Accounting-Tool (Feishu Bot)
 
 一个 AI 自动记账机器人。
 
