@@ -1,73 +1,167 @@
-# 🧾 Accounting-Tool | 财务自动化归档系统 (V1.0)
+# Accounting-Tool (TypeScript + Feishu Bot)
 
-🚀 本系统通过 **AI 视觉大模型 (VLM)** 智能提取电商截图（淘宝/京东等）中的“实付款”金额，并自动匹配本地 **PDF 电子发票**。匹配成功后，系统会自动将数据及附件归档至 **飞书多维表格**，实现财务流程的完全自动化。
+一个 AI 自动记账机器人。
 
----
-
-## ✨ 核心优势
-
-*   **🧠 视觉语义理解**：利用 AI (Qwen2-VL) 模拟人眼定位“实付款”，完美避开原价、折扣、满减等干扰数字。
-*   **🧩 模糊对账逻辑**：基于“金额桶”算法，支持文件名杂乱、多图多票的批量自动配对。
-*   **☁️ 云端自动归档**：全自动附件上传与结构化存档，彻底告别繁琐的手动录入。
-*   **🛡️ 异常处理机制**：识别或匹配失败的文件会自动移动至 `fail` 文件夹，便于后续人工处理。
+核心体验：
+- 首次 `npm start` 自动 CLI 引导，写入 `.env`
+- 自动校验飞书权限并自动创建多维表格（首次）
+- 飞书机器人通过 WebSocket 长连接接收图片/PDF
+- 图片与发票按金额自动配对，成功后自动写入多维表格
+- 未匹配条目超时后自动提醒（Human-in-the-Loop）
 
 ---
 
-## 🛠️ 环境准备
+## 1. 环境要求
 
-系统基于 Python 开发，部署前请确保电脑已安装 **Python 3.9+** 版本。
-
-1.  **下载代码**：确保文件夹内包含 `detect.py` 脚本。
-2.  **安装依赖库**：打开终端 (Cmd 或 PowerShell)，在文件夹目录下执行：
-    ```bash
-    pip install openai lark-oapi pdfplumber
-    ```
+- Node.js `>= 20`
+- npm `>= 9`
+- 一个可用的飞书自建应用（机器人）
+- OpenRouter API Key
 
 ---
 
-## ⚙️ 配置指南
+## 2. 安装依赖
 
-### 第一步：配置 AI 识图模型 (核心大脑)
-本系统采用 **视觉大模型 (VLM)**，你需要获取一个 API Key 来驱动它。
+```bash
+npm install
+```
 
-1.  **获取 Key**：访问 [硅基流动 (SiliconFlow)](https://cloud.siliconflow.cn/) 注册账号。
-2.  **创建密钥**：在后台点击 **API 密钥** -> **新建密钥**，复制 `sk-` 开头的字符串。
-    > **Tip**: 该平台支持开源顶尖模型 (如 Qwen2-VL)，注册即送免费额度，个人使用近乎免费。
+---
 
-### 第二步：配置飞书多维表格 (数据仓库)
+## 3. 飞书应用配置（必须）
 
-#### 1. 建立归档表格
-在飞书创建一个新的 **多维表格**，添加以下字段（**⚠️ 重要：列名必须完全一致**）：
+在飞书开放平台创建自建应用，并启用机器人能力。
 
-| 字段名称 | 字段类型 |
-| :--- | :--- |
-| **日期** | 日期 |
-| **金额** | 数字 |
-| **发票** | 附件 |
-| **订单截图** | 附件 |
+建议至少开通以下权限（按实际接口再补充）：
+- `im:message`
+- `drive:drive`
+- `bitable:app`
 
-*记录关键 ID：*
-*   **BASE_TOKEN**: 在表格 URL 中，`base/` 后面的一串字符。
-*   **TABLE_ID**: 在表格 URL 中，`tbl` 后面的一串字符。
+将应用安装到你的企业/团队，并确保机器人可在目标会话中收发消息。
 
-#### 2. 创建飞书机器人 (权限网关)
-1.  访问 [飞书开放平台](https://open.feishu.cn/app) -> **创建自建应用**。
-2.  **获取凭证**：记下应用页面的 `App ID` 和 `App Secret`。
-3.  **开通权限**：在“权限管理”中搜索并勾选：
-    *   `bitable:app` (多维表格管理权限)
-    *   `drive:drive` (云文档与附件上传权限)
-4.  **发布应用**：在“版本管理与发布”中，创建一个版本并申请上线（需管理员审批）。
-5.  **激活机器人**：在你的多维表格右上角点击 `...` -> `更多` -> `添加文档应用`，搜索并添加你创建的应用。
+---
 
-### 第三步：修改脚本配置
-打开 `detect.py` 文件，在代码顶部的 **配置区域** 填入你获取的参数：
+## 4. 首次启动（自动初始化）
 
-```python
-# 1. (AI Config)
-SILICON_API_KEY = "你的_sk_密钥" 
+```bash
+npm start
+```
 
-# 2. 飞书配置
-APP_ID = "你的_App_ID"
-APP_SECRET = "你的_App_Secret"
-BASE_TOKEN = "你的_Base_Token" 
-TABLE_ID = "你的_Table_ID"
+首次无 `.env` 时，会自动出现 CLI 向导并询问：
+- `OpenRouter API Key`
+- `飞书 App ID`
+- `飞书 App Secret`
+
+保存后程序会自动：
+1. 校验飞书权限
+2. 检查或创建 `AI自动记账本`
+3. 检查或创建 `记账明细` 表
+4. 自动补齐字段：
+   - `日期`
+   - `金额`
+   - `发票`（附件）
+   - `订单截图`（附件）
+
+成功后终端会显示 Bitable 链接，并进入 WebSocket 常驻监听。
+
+---
+
+## 5. 开发命令
+
+```bash
+# 开发模式（直接运行 src）
+npm run dev
+
+# 编译（TypeScript -> dist）
+npm run build
+
+# 自动测试
+npm test
+
+# 批量回补（默认处理 ./pending 目录）
+npm run batch
+
+# 指定任意目录做批量匹配归档
+npm run dev -- --batch-dir ./your-folder
+```
+
+---
+
+## 6. 交互流程（实际使用）
+
+1. 在飞书给机器人发送付款截图（图片）
+2. 机器人先回复“已收到，正在识别...”
+3. 再发送对应 PDF 发票
+4. 系统按金额配对成功后，自动写表并回执成功卡片
+5. 超时未配对的记录会发送提醒卡片
+
+批量回补模式：
+1. 把未匹配的截图和 PDF 放到同一目录（可包含子目录）
+2. 执行 `npm run dev -- --batch-dir ./pending`
+3. 程序会用 VLM 识别截图金额、解析 PDF 金额，按金额配对
+4. 配对成功即写入飞书多维表格同一行（日期/金额/发票/截图）
+5. 终端输出未匹配清单，便于人工补齐
+
+---
+
+## 7. 配置项说明（`.env`）
+
+参考 `.env.example`：
+
+```env
+OPENROUTER_API_KEY=
+OPENROUTER_VLM_MODEL=qwen/qwen2.5-vl-72b-instruct
+LARK_APP_ID=
+LARK_APP_SECRET=
+LARK_BASE_NAME=AI自动记账本
+LARK_TABLE_NAME=记账明细
+LARK_BASE_TOKEN=
+LARK_TABLE_ID=
+UNMATCHED_REMINDER_MINUTES=120
+```
+
+说明：
+- `LARK_BASE_TOKEN` / `LARK_TABLE_ID` 首次初始化后会自动回填
+- `UNMATCHED_REMINDER_MINUTES` 控制未匹配提醒时间
+
+---
+
+## 8. 项目结构（当前版本）
+
+```text
+src/
+├─ index.ts                 # 程序入口（CLI + 初始化 + WS启动）
+├─ cli/                     # 首次引导交互
+├─ config/                  # 环境变量与常量
+├─ lark/                    # 飞书 API / WebSocket / 消息卡片
+├─ agent/                   # PDF 解析与匹配池
+├─ services/                # OpenRouter 与业务编排
+├─ types/                   # 类型定义
+└─ utils/                   # 金额等工具函数
+```
+
+---
+
+## 9. 部署建议
+
+可将该程序部署为长期运行的 Node 进程（如 PM2 / systemd / Docker）。
+
+最简方式（PM2）：
+```bash
+npm run build
+pm2 start "node dist/index.js" --name accounting-tool
+pm2 save
+```
+
+---
+
+## 10. 常见问题
+
+- 启动后收不到飞书消息  
+  检查应用是否已发布并安装到企业，机器人是否在会话中可见，事件订阅是否开启。
+
+- 能收到消息但写表失败  
+  检查应用是否具备 `bitable` 与 `drive` 权限，且目标多维表格可访问。
+
+- 金额识别偏差  
+  可更换 `OPENROUTER_VLM_MODEL`，或在图片识别提示词中强化“仅实付款”约束。

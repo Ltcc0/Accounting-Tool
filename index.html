@@ -1,441 +1,216 @@
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>财务自动化归档系统</title>
     <style>
-        :root {
-            --primary: #3370ff;
-            --primary-hover: #4c83ff;
-            --primary-active: #245bdb;
-            --bg: #f5f6f7;
-            --card-bg: #ffffff;
-            --text-main: #1f2329;
-            --text-sub: #646a73;
-            --text-muted: #8f959e;
-            --border: #dee0e3;
-            --danger: #f54a45;
-            --success: #00b666;
-            --shadow: 0 4px 16px rgba(31, 35, 41, 0.05);
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            padding: 60px 20px;
-            margin: 0;
-        }
-        .container {
-            background: var(--card-bg);
-            width: 100%;
-            max-width: 680px;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            box-sizing: border-box;
-        }
-        h1 {
-            font-size: 24px;
-            font-weight: 600;
-            margin: 0 0 32px 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            letter-spacing: -0.5px;
-        }
-        .icon-box {
-            width: 32px;
-            height: 32px;
-            background: var(--primary);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        .upload-area {
-            border: 1px dashed var(--border);
-            border-radius: 8px;
-            padding: 40px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background: var(--card-bg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-        }
-        .upload-area:hover, .upload-area.dragover {
-            border-color: var(--primary);
-            background: #f0f4ff;
-        }
-        .upload-icon {
-            width: 36px;
-            height: 36px;
-            fill: var(--text-muted);
-            transition: fill 0.2s;
-        }
-        .upload-area:hover .upload-icon, .upload-area.dragover .upload-icon {
-            fill: var(--primary);
-        }
-        .upload-title {
-            font-size: 16px;
-            font-weight: 500;
-            color: var(--text-main);
-        }
-        .upload-desc {
-            font-size: 14px;
-            color: var(--text-sub);
-        }
-        .list-header {
-            font-size: 16px;
-            font-weight: 600;
-            margin: 32px 0 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .badge {
-            background: var(--bg);
-            color: var(--text-sub);
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-        .file-list {
-            max-height: 280px;
-            overflow-y: auto;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--card-bg);
-        }
-        .file-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--border);
-            font-size: 14px;
-            align-items: center;
-            transition: background 0.2s;
-        }
-        .file-item:last-child {
-            border-bottom: none;
-        }
-        .file-item:hover {
-            background: #f8f9fa;
-        }
-        .file-name {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-main);
-            word-break: break-all;
-        }
-        .del-btn {
-            color: var(--text-sub);
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-size: 14px;
-            padding: 6px 12px;
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-        .del-btn:hover {
-            color: var(--danger);
-            background: #ffeded;
-        }
-        .btn-run {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 0;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 500;
-            width: 100%;
-            margin-top: 32px;
-            transition: all 0.2s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn-run:hover:not(:disabled) {
-            background: var(--primary-hover);
-        }
-        .btn-run:active:not(:disabled) {
-            background: var(--primary-active);
-        }
-        .btn-run:disabled {
-            background: #a4bdfc;
-            cursor: not-allowed;
-        }
-        .log-box {
-            margin-top: 24px;
-            background: #1f2329;
-            padding: 16px;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #aeb4be;
-            max-height: 200px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            display: none;
-            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-            line-height: 1.6;
-        }
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(31, 35, 41, 0.6);
-            backdrop-filter: blur(2px);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-card {
-            background: var(--card-bg);
-            padding: 40px;
-            border-radius: 12px;
-            text-align: center;
-            width: 340px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            animation: popUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            box-sizing: border-box;
-        }
-        .check-circle {
-            width: 72px;
-            height: 72px;
-            background: #e8fbed;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-        .check-circle svg {
-            width: 36px;
-            height: 36px;
-            fill: var(--success);
-        }
-        .modal-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-        .modal-desc {
-            font-size: 14px;
-            color: var(--text-sub);
-            margin-top: 8px;
-            line-height: 1.5;
-        }
-        .btn-close {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            padding: 10px 0;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 28px;
-            width: 100%;
-            font-size: 15px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-        .btn-close:hover {
-            background: var(--bg);
-        }
-        @keyframes popUp {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        .confetti {
-            position: fixed;
-            width: 8px;
-            height: 8px;
-            pointer-events: none;
-            z-index: 1001;
-            border-radius: 2px;
-        }
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #c2c3c5;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #999;
-        }
+      :root {
+        --primary: #3370ff;
+        --primary-hover: #4c83ff;
+        --primary-active: #245bdb;
+        --bg: #f5f6f7;
+        --card-bg: #fff;
+        --text-main: #1f2329;
+        --text-sub: #646a73;
+        --text-muted: #8f959e;
+        --border: #dee0e3;
+        --danger: #f54a45;
+        --success: #00b666;
+      }
+      body {
+        margin: 0;
+        padding: 48px 16px;
+        background: var(--bg);
+        color: var(--text-main);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+      }
+      .container {
+        width: 100%;
+        max-width: 760px;
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 28px;
+        box-sizing: border-box;
+        box-shadow: 0 8px 24px rgba(31, 35, 41, 0.08);
+      }
+      h1 {
+        margin: 0 0 20px;
+        font-size: 24px;
+      }
+      .upload-area {
+        border: 1px dashed var(--border);
+        border-radius: 10px;
+        padding: 28px;
+        text-align: center;
+        cursor: pointer;
+        transition: 0.2s ease;
+      }
+      .upload-area:hover,
+      .upload-area.dragover {
+        border-color: var(--primary);
+        background: #f0f4ff;
+      }
+      .file-list {
+        margin-top: 20px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        min-height: 120px;
+      }
+      .file-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .file-item:last-child {
+        border-bottom: none;
+      }
+      .btn-run {
+        width: 100%;
+        margin-top: 18px;
+        border: none;
+        border-radius: 10px;
+        background: var(--primary);
+        color: #fff;
+        height: 44px;
+        font-size: 15px;
+        cursor: pointer;
+      }
+      .btn-run:hover {
+        background: var(--primary-hover);
+      }
+      .btn-run:active {
+        background: var(--primary-active);
+      }
+      .btn-del {
+        border: none;
+        background: transparent;
+        color: var(--danger);
+        cursor: pointer;
+      }
+      .log-box {
+        margin-top: 16px;
+        white-space: pre-wrap;
+        background: #1f2329;
+        color: #dbe0e8;
+        border-radius: 10px;
+        min-height: 80px;
+        padding: 12px;
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+      }
+      .empty {
+        color: var(--text-muted);
+        text-align: center;
+        padding: 24px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1><div class="icon-box">AI</div> 财务自动化归档</h1>
-        
-        <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
-            <svg class="upload-icon" viewBox="0 0 24 24">
-                <path d="M12.75 4.5a.75.75 0 0 0-1.5 0v10.69l-3.22-3.22a.75.75 0 0 0-1.06 1.06l4.5 4.5a.75.75 0 0 0 1.06 0l4.5-4.5a.75.75 0 1 0-1.06-1.06l-3.22 3.22V4.5zM4 19.5a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H4.75A.75.75 0 0 1 4 19.5z"/>
-            </svg>
-            <div class="upload-title">点击或拖拽上传文件</div>
-            <div class="upload-desc">支持上传 PDF 电子发票与电商订单截图</div>
-            <input type="file" id="fileInput" multiple style="display:none" onchange="handleUpload(this.files)">
-        </div>
-        
-        <div class="list-header">
-            <span>待处理文件</span>
-            <span class="badge" id="fileCount">0</span>
-        </div>
-        <div class="file-list" id="fileList"></div>
-        
-        <button class="btn-run" onclick="runProcess()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:-2px"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            开始自动匹配与归档
-        </button>
-        <div class="log-box" id="logs"></div>
-    </div>
-
-    <div class="modal-overlay" id="modal">
-        <div class="modal-card">
-            <div class="check-circle">
-                <svg viewBox="0 0 24 24">
-                    <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
-                </svg>
-            </div>
-            <div class="modal-title">归档完成</div>
-            <div class="modal-desc">匹配成功的数据已自动同步至飞书多维表格</div>
-            <button class="btn-close" onclick="closeModal()">我知道了</button>
-        </div>
+      <h1>财务自动化归档系统</h1>
+      <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        点击或拖拽上传文件（支持 PDF 发票与订单截图）
+        <input type="file" id="fileInput" multiple style="display: none" onchange="handleUpload(this.files)" />
+      </div>
+      <div class="file-list" id="fileList"></div>
+      <button class="btn-run" onclick="runProcess()">开始自动匹配与归档</button>
+      <div class="log-box" id="logs">等待操作...</div>
     </div>
 
     <script>
-        const API = ''; 
-        const dropZone = document.getElementById('dropZone');
+      const API = "";
+      const dropZone = document.getElementById("dropZone");
+      const fileList = document.getElementById("fileList");
+      const logs = document.getElementById("logs");
 
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("dragover");
+      });
+      dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("dragover");
+        if (e.dataTransfer.files?.length) handleUpload(e.dataTransfer.files);
+      });
 
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length > 0) {
-                handleUpload(e.dataTransfer.files);
-            }
-        });
-
-        async function loadFiles() {
-            const res = await fetch(`${API}/files`);
-            const data = await res.json();
-            document.getElementById('fileCount').innerText = data.files.length;
-            const list = document.getElementById('fileList');
-            if (data.files.length) {
-                list.innerHTML = data.files.map(f => `
-                    <div class="file-item">
-                        <span class="file-name">
-                            <svg width="16" height="16" fill="var(--text-muted)" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM13 9V3.5L18.5 9H13z"/></svg>
-                            ${f}
-                        </span>
-                        <button class="del-btn" onclick="deleteFile('${f}')">移除</button>
-                    </div>
-                `).join('');
-            } else {
-                list.innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--text-muted); font-size:14px;">暂无待处理文件</div>';
-            }
+      async function loadFiles() {
+        try {
+          const res = await fetch(`${API}/files`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          const files = Array.isArray(data.files) ? data.files : [];
+          if (!files.length) {
+            fileList.innerHTML = '<div class="empty">暂无待处理文件</div>';
+            return;
+          }
+          fileList.innerHTML = files
+            .map(
+              (f) => `<div class="file-item"><span>${escapeHtml(f)}</span><button class="btn-del" onclick="deleteFile('${encodeURIComponent(f)}')">移除</button></div>`
+            )
+            .join("");
+        } catch (err) {
+          logs.innerText = `加载文件失败: ${String(err)}`;
         }
+      }
 
-        async function handleUpload(files) {
-            const fd = new FormData();
-            for (let f of files) fd.append('files', f);
-            await fetch(`${API}/upload`, { method: 'POST', body: fd });
-            document.getElementById('fileInput').value = '';
-            loadFiles();
+      async function handleUpload(files) {
+        if (!files?.length) return;
+        const fd = new FormData();
+        for (const f of files) fd.append("files", f);
+        const res = await fetch(`${API}/upload`, { method: "POST", body: fd });
+        if (!res.ok) {
+          logs.innerText = `上传失败: HTTP ${res.status}`;
+          return;
         }
+        document.getElementById("fileInput").value = "";
+        await loadFiles();
+      }
 
-        async function deleteFile(name) {
-            await fetch(`${API}/files/${name}`, { method: 'DELETE' });
-            loadFiles();
+      async function deleteFile(encodedName) {
+        const name = decodeURIComponent(encodedName);
+        const res = await fetch(`${API}/files/${encodeURIComponent(name)}`, { method: "DELETE" });
+        if (!res.ok) {
+          logs.innerText = `删除失败: HTTP ${res.status}`;
+          return;
         }
+        await loadFiles();
+      }
 
-        async function runProcess() {
-            const btn = document.querySelector('.btn-run');
-            const logBox = document.getElementById('logs');
-            btn.disabled = true; 
-            btn.innerHTML = `<svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>处理中...`;
-            
-            let spinStyle = document.getElementById('spinStyle');
-            if (!spinStyle) {
-                spinStyle = document.createElement('style');
-                spinStyle.id = 'spinStyle';
-                spinStyle.innerHTML = `@keyframes spin { 100% { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; margin-top:-2px; }`;
-                document.head.appendChild(spinStyle);
-            }
-
-            logBox.style.display = 'block'; 
-            logBox.innerText = "正在分析...";
-            
-            try {
-                const res = await fetch(`${API}/run`, { method: 'POST' });
-                const data = await res.json();
-                logBox.innerText = data.logs.join('\n');
-                if(data.logs.some(l => l.includes("成功"))) {
-                    triggerConfetti();
-                    document.getElementById('modal').style.display = 'flex';
-                }
-            } catch(e) { 
-                alert("错误: " + e); 
-            } finally { 
-                btn.disabled = false; 
-                btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:-2px"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>开始自动匹配与归档`; 
-                loadFiles(); 
-            }
+      async function runProcess() {
+        const btn = document.querySelector(".btn-run");
+        btn.disabled = true;
+        btn.textContent = "处理中...";
+        logs.innerText = "正在分析并匹配...";
+        try {
+          const res = await fetch(`${API}/run`, { method: "POST" });
+          const data = await res.json();
+          const rows = Array.isArray(data.logs) ? data.logs : ["处理完成，但无日志返回"];
+          logs.innerText = rows.join("\n");
+        } catch (err) {
+          logs.innerText = `处理失败: ${String(err)}`;
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "开始自动匹配与归档";
+          await loadFiles();
         }
+      }
 
-        function closeModal() { 
-            document.getElementById('modal').style.display = 'none'; 
-        }
+      function escapeHtml(input) {
+        return String(input)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
 
-        function triggerConfetti() {
-            const colors = ['#3370ff', '#00b666', '#ffc107', '#f54a45'];
-            for(let i=0; i<80; i++) {
-                const el = document.createElement('div');
-                el.className = 'confetti';
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                el.style.cssText = `background:${color}; left:${Math.random()*100}vw; top:-10px; transition: 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);`;
-                document.body.append(el);
-                setTimeout(() => { 
-                    el.style.top = '110vh'; 
-                    el.style.transform = `rotate(${Math.random() * 1080}deg) scale(${Math.random() + 0.5})`; 
-                    el.style.opacity = '0';
-                }, 50);
-                setTimeout(() => el.remove(), 2500);
-            }
-        }
-
-        loadFiles();
+      loadFiles();
     </script>
-</body>
+  </body>
 </html>
