@@ -1,4 +1,4 @@
-# Accounting-Tool (Feishu Bot)
+# Accounting-Tool 2.0(Feishu Bot)
 
 一个 AI 自动记账机器人。
 
