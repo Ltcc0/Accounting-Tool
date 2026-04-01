@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+﻿import { writeFileSync } from "node:fs";
 import { ACCOUNTING_FIELDS } from "../config/constants.js";
 import { getEnvFilePath, type AppEnv } from "../config/env.js";
 import { LarkApiService } from "./api.js";
@@ -38,7 +38,7 @@ export class LarkInitializer {
     const token = await this.api.getTenantToken();
     const existingBase = this.env.LARK_BASE_TOKEN
       ? await this.safeGetBaseByToken(token, this.env.LARK_BASE_TOKEN)
-      : await this.findBaseByName(token, this.env.LARK_BASE_NAME);
+      : null;
     const base = existingBase ?? (await this.createBase(token, this.env.LARK_BASE_NAME));
     const table = await this.ensureTableAndFields(token, base.app_token);
 
@@ -68,16 +68,6 @@ export class LarkInitializer {
     }
   }
 
-  private async findBaseByName(token: string, name: string): Promise<BitableApp | null> {
-    type Data = { items: BitableApp[] };
-    const data = await this.request<Data>({
-      token,
-      path: "/open-apis/bitable/v1/apps?page_size=200",
-      method: "GET"
-    });
-    return data.items.find((item) => item.name === name) ?? null;
-  }
-
   private async createBase(token: string, name: string): Promise<BitableApp> {
     type Data = { app: BitableApp };
     const data = await this.request<Data>({
@@ -100,13 +90,13 @@ export class LarkInitializer {
 
   private async safeGetTableById(token: string, appToken: string, tableId: string): Promise<BitableTable | null> {
     try {
-      type Data = { table: BitableTable };
+      type Data = { table?: BitableTable; table_id?: string; name?: string };
       const data = await this.request<Data>({
         token,
         path: `/open-apis/bitable/v1/apps/${appToken}/tables/${tableId}`,
         method: "GET"
       });
-      return data.table;
+      return this.extractTable(data);
     } catch {
       return null;
     }
@@ -123,19 +113,29 @@ export class LarkInitializer {
   }
 
   private async createTable(token: string, appToken: string, tableName: string): Promise<BitableTable> {
-    type Data = { table: BitableTable };
+    type Data = {
+      table?: BitableTable;
+      table_id?: string;
+      name?: string;
+      items?: Array<{ table_id?: string; name?: string }>;
+    };
+
     const data = await this.request<Data>({
       token,
       path: `/open-apis/bitable/v1/apps/${appToken}/tables`,
       method: "POST",
       body: {
         table: {
-          name: tableName,
-          default_view_name: "全部记录"
+          name: tableName
         }
       }
     });
-    return data.table;
+
+    const table = this.extractTable(data);
+    if (!table) {
+      throw new Error("create table succeeded but response has no table_id");
+    }
+    return table;
   }
 
   private async ensureFields(token: string, appToken: string, tableId: string): Promise<void> {
@@ -149,12 +149,24 @@ export class LarkInitializer {
     const existing = new Set(data.items.map((f) => f.field_name));
     for (const field of ACCOUNTING_FIELDS) {
       if (existing.has(field.field_name)) continue;
-      await this.request({
-        token,
-        path: `/open-apis/bitable/v1/apps/${appToken}/tables/${tableId}/fields`,
-        method: "POST",
-        body: { field }
-      });
+      try {
+        await this.request({
+          token,
+          path: `/open-apis/bitable/v1/apps/${appToken}/tables/${tableId}/fields`,
+          method: "POST",
+          body: {
+            field_name: field.field_name,
+            type: field.type
+          }
+        });
+      } catch {
+        await this.request({
+          token,
+          path: `/open-apis/bitable/v1/apps/${appToken}/tables/${tableId}/fields`,
+          method: "POST",
+          body: { field }
+        });
+      }
     }
   }
 
@@ -172,11 +184,52 @@ export class LarkInitializer {
       },
       body: params.body ? JSON.stringify(params.body) : undefined
     });
-    const body = (await res.json()) as FeishuResponse<T>;
+
+    const body = await this.parseResponse<T>(res, params.path);
     if (!res.ok || body.code !== 0) {
       throw new Error(`飞书请求失败 ${params.path}: ${body.msg || res.statusText}`);
     }
     return body.data;
+  }
+
+  private async parseResponse<T>(res: Response, path: string): Promise<FeishuResponse<T>> {
+    const raw = await res.text();
+    const text = stripBom(raw).trim();
+    try {
+      return JSON.parse(text) as FeishuResponse<T>;
+    } catch {
+      const preview = text.slice(0, 300).replace(/\s+/g, " ");
+      throw new Error(
+        `飞书接口返回了非 JSON 数据 (${path})。HTTP ${res.status} ${res.statusText}，响应片段: ${preview || "<empty>"}`
+      );
+    }
+  }
+
+  private extractTable(data: {
+    table?: BitableTable;
+    table_id?: string;
+    name?: string;
+    items?: Array<{ table_id?: string; name?: string }>;
+  }): BitableTable | null {
+    if (data.table?.table_id) {
+      return data.table;
+    }
+    if (data.table_id) {
+      return {
+        table_id: data.table_id,
+        name: data.name ?? this.env.LARK_TABLE_NAME
+      };
+    }
+
+    const first = data.items?.find((item) => Boolean(item.table_id));
+    if (first?.table_id) {
+      return {
+        table_id: first.table_id,
+        name: first.name ?? this.env.LARK_TABLE_NAME
+      };
+    }
+
+    return null;
   }
 
   private persistRuntimeEnv(baseToken: string, tableId: string): void {
@@ -195,3 +248,6 @@ export class LarkInitializer {
   }
 }
 
+function stripBom(input: string): string {
+  return input.charCodeAt(0) === 0xfeff ? input.slice(1) : input;
+}
