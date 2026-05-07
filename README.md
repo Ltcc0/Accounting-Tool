@@ -1,26 +1,26 @@
-# Accounting-Tool 2.0(Feishu Bot)
+# Accounting-Tool 2.0 (Feishu/Lark Bot)
 
-一个 AI 自动记账机器人。
+An AI-powered automatic bookkeeping bot.
 
-核心体验：
-- 首次 `npm start` 自动 CLI 引导，写入 `.env`
-- 自动校验飞书权限并自动创建多维表格（首次）
-- 飞书机器人通过 WebSocket 长连接接收图片/PDF
-- 图片与发票按金额自动配对，成功后自动写入多维表格
-- 未匹配条目超时后自动提醒（Human-in-the-Loop）
+**Core Experience:**
+- **Automatic CLI Guidance:** Guided setup via CLI upon the first `npm start`, automatically writing to `.env`.
+- **Seamless Setup:** Automatically validates Feishu permissions and creates the Bitable (on first run).
+- **Real-time Interaction:** Receives images/PDFs via Feishu bot through a WebSocket long connection.
+- **Intelligent Matching:** Automatically pairs screenshots with invoices based on the amount and writes the data to the Bitable upon success.
+- **Human-in-the-Loop:** Automatically sends reminders for unmatched entries after a timeout.
 
 ---
 
-## 1. 环境要求
+## 1. Requirements
 
 - Node.js `>= 20`
 - npm `>= 9`
-- 一个可用的飞书自建应用（机器人）
+- A Feishu Custom App (Bot)
 - OpenRouter API Key
 
 ---
 
-## 2. 安装依赖
+## 2. Installation
 
 ```bash
 npm install
@@ -28,85 +28,85 @@ npm install
 
 ---
 
-## 3. 飞书应用配置（必须）
+## 3. Feishu App Configuration (Required)
 
-在飞书开放平台创建自建应用，并启用机器人能力。
+Create a custom app on the Feishu Open Platform and enable Bot capabilities.
 
-建议至少开通以下权限（按实际接口再补充）：
+It is recommended to grant at least the following permissions (add others as needed based on actual interfaces):
 - `im:message`
 - `drive:drive`
 - `bitable:app`
 
-将应用安装到你的企业/团队，并确保机器人可在目标会话中收发消息。
+Install the app to your company/team and ensure the bot can send and receive messages in the target session.
 
 ---
 
-## 4. 首次启动（自动初始化）
+## 4. First Launch (Automatic Initialization)
 
 ```bash
 npm start
 ```
 
-首次无 `.env` 时，会自动出现 CLI 向导并询问：
+If no `.env` file exists, a CLI wizard will automatically appear and ask for:
 - `OpenRouter API Key`
-- `飞书 App ID`
-- `飞书 App Secret`
+- `Feishu App ID`
+- `Feishu App Secret`
 
-保存后程序会自动：
-1. 校验飞书权限
-2. 检查或创建 `AI自动记账本`
-3. 检查或创建 `记账明细` 表
-4. 自动补齐字段：
-   - `日期`
-   - `金额`
-   - `发票`（附件）
-   - `订单截图`（附件）
+After saving, the program will automatically:
+1. Validate Feishu permissions.
+2. Check for or create the `AI Automatic Accounting Book` (Bitable).
+3. Check for or create the `Bookkeeping Details` (Table).
+4. Automatically initialize fields:
+   - `Date`
+   - `Amount`
+   - `Invoice` (Attachment)
+   - `Order Screenshot` (Attachment)
 
-成功后终端会显示 Bitable 链接，并进入 WebSocket 常驻监听。
+Once successful, the terminal will display the Bitable link and enter WebSocket listening mode.
 
 ---
 
-## 5. 开发命令
+## 5. Development Commands
 
 ```bash
-# 开发模式（直接运行 src）
+# Development mode (run src directly)
 npm run dev
 
-# 编译（TypeScript -> dist）
+# Build (TypeScript -> dist)
 npm run build
 
-# 自动测试
+# Automated tests
 npm test
 
-# 批量回补（默认处理 ./pending 目录）
+# Batch backfill (processes the ./pending directory by default)
 npm run batch
 
-# 指定任意目录做批量匹配归档
+# Specify any directory for batch matching and archiving
 npm run dev -- --batch-dir ./your-folder
 ```
 
 ---
 
-## 6. 使用教程
+## 6. Tutorial
 
-1. 在飞书给机器人发送付款截图（图片）
-2. 机器人先回复“已收到，正在识别...”
-3. 再发送对应 PDF 发票
-4. 系统按金额配对成功后，自动写表并回执成功卡片
-5. 超时未配对的记录会发送提醒卡片
+1. Send a payment screenshot (image) to the bot in Feishu.
+2. The bot will reply: "Received, identifying..."
+3. Send the corresponding PDF invoice.
+4. Once the system matches them by amount, it will automatically write to the table and send a success confirmation card.
+5. For entries that remain unmatched after a timeout, a reminder card will be sent.
 
-批量回补模式：
-1. 把未匹配的截图和 PDF 放到同一目录（可包含子目录）
-2. 执行 `npm run dev -- --batch-dir ./pending`
-3. 程序会用 VLM 识别截图金额、解析 PDF 金额，按金额配对
-4. 配对成功即写入飞书多维表格同一行（日期/金额/发票/截图）
-5. 终端输出未匹配清单，便于人工补齐
+**Batch Backfill Mode:**
+1. Place unmatched screenshots and PDFs in the same directory (subdirectories are supported).
+2. Execute `npm run dev -- --batch-dir ./pending`.
+3. The program uses VLM to identify screenshot amounts, parses PDF amounts, and pairs them.
+4. Successful matches are written to the same row in the Feishu Bitable (Date/Amount/Invoice/Screenshot).
+5. The terminal outputs a list of unmatched items for manual follow-up.
 
 ---
 
-## 7. 配置项说明（`.env`）
+## 7. Configuration Details (`.env`)
 
-参考 `.env.example`：
+Refer to `.env.example`:
 
 ```env
 OPENROUTER_API_KEY=
@@ -120,33 +120,33 @@ LARK_TABLE_ID=
 UNMATCHED_REMINDER_MINUTES=120
 ```
 
-说明：
-- `LARK_BASE_TOKEN` / `LARK_TABLE_ID` 首次初始化后会自动回填
-- `UNMATCHED_REMINDER_MINUTES` 控制未匹配提醒时间
+**Notes:**
+- `LARK_BASE_TOKEN` / `LARK_TABLE_ID` will be automatically backfilled after the initial setup.
+- `UNMATCHED_REMINDER_MINUTES` controls the timing for unmatched reminders.
 
 ---
 
-## 8. 项目结构（当前版本）
+## 8. Project Structure
 
 ```text
 src/
-├─ index.ts                 # 程序入口（CLI + 初始化 + WS启动）
-├─ cli/                     # 首次引导交互
-├─ config/                  # 环境变量与常量
-├─ lark/                    # 飞书 API / WebSocket / 消息卡片
-├─ agent/                   # PDF 解析与匹配池
-├─ services/                # OpenRouter 与业务编排
-├─ types/                   # 类型定义
-└─ utils/                   # 金额等工具函数
+├─ index.ts                 # Entry point (CLI + Init + WS Start)
+├─ cli/                     # First-time setup guidance
+├─ config/                  # Environment variables and constants
+├─ lark/                    # Feishu API / WebSocket / Message Cards
+├─ agent/                   # PDF parsing and matching pool
+├─ services/                # OpenRouter and business orchestration
+├─ types/                   # Type definitions
+└─ utils/                   # Utilities (e.g., amount formatting)
 ```
 
 ---
 
-## 9. 部署建议
+## 9. Deployment Suggestions
 
-可将该程序部署为长期运行的 Node 进程（如 PM2 / systemd / Docker）。
+The program can be deployed as a long-running Node process (e.g., using PM2, systemd, or Docker).
 
-最简方式（PM2）：
+**Simplest method (PM2):**
 ```bash
 npm run build
 pm2 start "node dist/index.js" --name accounting-tool
@@ -155,13 +155,13 @@ pm2 save
 
 ---
 
-## 10. 常见问题
+## 10. FAQ
 
-- 启动后收不到飞书消息  
-  检查应用是否已发布并安装到企业，机器人是否在会话中可见，事件订阅是否开启。
+- **Not receiving Feishu messages after launch**  
+  Check if the app is published and installed in the company, if the bot is visible in the session, and if Event Subscriptions are enabled.
 
-- 能收到消息但写表失败  
-  检查应用是否具备 `bitable` 与 `drive` 权限，且目标多维表格可访问。
+- **Messages received but Bitable write fails**  
+  Ensure the app has `bitable` and `drive` permissions and that the target Bitable is accessible.
 
-- 金额识别偏差  
-  可更换 `OPENROUTER_VLM_MODEL`，或在图片识别提示词中强化“仅实付款”约束。
+- **Amount recognition discrepancies**  
+  Try changing the `OPENROUTER_VLM_MODEL` or strengthen the prompt constraints for image recognition (e.g., "Extract only the actual amount paid").
